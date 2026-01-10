@@ -35,6 +35,7 @@
                 <li><a href="#experience">經歷</a></li>
                 <li><a href="#music">音樂作品</a></li>
                 <li><a href="#puzzles">拼圖作品</a></li>
+                <li><a href="#calculator">財務自由計算機</a></li>
                 <li><a href="#contact">聯絡我</a></li>
             </ul>
             <div class="menu-btn">
@@ -181,20 +182,72 @@
             </div>
         </section>
 
-        <!-- Portfolio Placeholder Section -->
+        <!-- Portfolio Placeholder Section -> Now Calculator Entry -->
         <section id="portfolio" class="section bg-light">
             <div class="container">
                 <h2 class="section-title">個人作品</h2>
                 <div class="portfolio-grid">
-                    <div class="portfolio-item placeholder-item">
+                    <div class="portfolio-item">
                         <div class="icon-box">
                             <i data-lucide="calculator"></i>
                         </div>
                         <h3>財務自由計算機</h3>
-                        <p>一個幫助您規劃財務自由目標的實用工具。</p>
-                        <span class="badge">Coming Soon</span>
-                        <!-- Button is disabled for now -->
-                        <button class="btn disabled" disabled>即將上線</button>
+                        <p>一個幫助您規劃財務自由目標的實用工具。已經正式上線！</p>
+                        <a href="#calculator" class="btn primary">立即計算</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Financial Freedom Calculator Section -->
+        <section id="calculator" class="section">
+            <div class="container">
+                <h2 class="section-title">財務自由計算機</h2>
+                <p class="section-desc">輸入您的資產配置與預期支出，評估距離財務自由還有多遠。</p>
+
+                <div class="calculator-card">
+                    <form id="fire-form">
+                        <div class="input-grid">
+                            <div class="input-group">
+                                <label for="asset-a">配息型資產總額 (萬元)</label>
+                                <input type="text" id="asset-a" placeholder="例如：1000" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="rate-b">預期配息率 (%)</label>
+                                <input type="number" id="rate-b" step="0.1" placeholder="例如：5" required>
+                                <div class="input-hint" id="dividend-income-hint"
+                                    style="font-size: 0.85rem; color: var(--primary-color); margin-top: 5px; font-weight: 500;">
+                                    配息年收入：0 萬元
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <label for="asset-c">成長型資產總額 (萬元)</label>
+                                <input type="text" id="asset-c" placeholder="例如：500" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="rate-d">預期報酬率 (%)</label>
+                                <input type="number" id="rate-d" step="0.1" placeholder="例如：7" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="expense-e">年支出 (萬元)</label>
+                                <input type="text" id="expense-e" placeholder="例如：60" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="inflation-f">長期通膨率 (%)</label>
+                                <input type="number" id="inflation-f" step="0.1" value="2" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn primary full-width">計算結果</button>
+                    </form>
+
+                    <div id="result-area" class="result-area hidden">
+                        <!-- 結果將由 JavaScript 動態插入 -->
+                    </div>
+
+                    <div class="calc-footer">
+                        <a href="#" class="btn secondary sm back-to-top">
+                            <i data-lucide="arrow-up"></i> 回到頂端
+                        </a>
                     </div>
                 </div>
             </div>
