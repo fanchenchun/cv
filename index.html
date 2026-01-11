@@ -206,6 +206,11 @@
                 <p class="section-desc">輸入您的資產配置與預期支出，評估距離財務自由還有多遠。</p>
 
                 <div class="calculator-card">
+                    <div class="logic-explanation">
+                        <p>本計算機採用<strong>「實質報酬率」</strong>邏輯：我們已預先扣除預期通膨，以確保計算出的被動收入能維持與今日相同的購買力。這意味著您的資產本金將會隨時間自動增長，以對抗物價上漲。
+                        </p>
+                    </div>
+
                     <form id="fire-form">
                         <div class="input-grid">
                             <div class="input-group">
@@ -215,10 +220,6 @@
                             <div class="input-group">
                                 <label for="rate-b">預期配息率 (%)</label>
                                 <input type="number" id="rate-b" step="0.1" placeholder="例如：5" required>
-                                <div class="input-hint" id="dividend-income-hint"
-                                    style="font-size: 0.85rem; color: var(--primary-color); margin-top: 5px; font-weight: 500;">
-                                    配息年收入：0 萬元
-                                </div>
                             </div>
                             <div class="input-group">
                                 <label for="asset-c">成長型資產總額 (萬元)</label>
@@ -239,6 +240,21 @@
                         </div>
                         <button type="submit" class="btn primary full-width">計算結果</button>
                     </form>
+
+                    <div class="secondary-metrics">
+                        <div class="metric-item">
+                            <span class="metric-label">實質配息收益 (C')</span>
+                            <span class="metric-value" id="val-c-prime">0 萬元</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">實質成長收益</span>
+                            <span class="metric-value" id="val-growth-income">0 萬元</span>
+                        </div>
+                        <div class="metric-item highlight">
+                            <span class="metric-label">總實質被動收入 (I2)</span>
+                            <span class="metric-value" id="val-i2">0 萬元</span>
+                        </div>
+                    </div>
 
                     <div id="result-area" class="result-area hidden">
                         <!-- 結果將由 JavaScript 動態插入 -->

@@ -496,6 +496,84 @@ footer {
     opacity: 0.6;
 }
 
+/* Financial Freedom Calculator Enhancements */
+.calculator-card {
+    padding: 30px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+}
+
+.logic-explanation {
+    background-color: #f1f7fe;
+    padding: 20px;
+    border-left: 4px solid var(--accent-color);
+    border-radius: 4px;
+    margin-bottom: 30px;
+    font-size: 0.95rem;
+    color: var(--primary-color);
+    line-height: 1.6;
+}
+
+.logic-explanation strong {
+    color: var(--accent-color);
+}
+
+.secondary-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin: 25px 0;
+    padding: 20px;
+    background-color: #fafbfc;
+    border-radius: 8px;
+    border: 1px dashed var(--border-color);
+}
+
+.metric-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.metric-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.metric-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.metric-item.highlight .metric-value {
+    color: var(--accent-color);
+}
+
+.result-card.success {
+    background-color: #f0fff4;
+    border: 1px solid #c6f6d5;
+}
+
+.result-card.success h3 {
+    color: #2f855a;
+}
+
+.result-card.warning {
+    background-color: #fff5f5;
+    border: 1px solid #fed7d7;
+}
+
+.result-card.warning h3 {
+    color: #c53030;
+}
+
+.full-width {
+    width: 100%;
+}
+
 /* Mobile Responsive */
 @media (max-width: 768px) {
     .nav-links {
@@ -520,5 +598,9 @@ footer {
 
     .puzzle-grid {
         grid-template-columns: repeat(2, 1fr);
+    }
+
+    .secondary-metrics {
+        grid-template-columns: 1fr;
     }
 }
