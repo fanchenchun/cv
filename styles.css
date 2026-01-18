@@ -713,6 +713,11 @@ footer {
         flex-direction: column;
     }
 
+    .ai-lab-video {
+        max-width: 100%;
+        min-height: auto;
+    }
+
     .ai-lab-info {
         padding: 25px;
     }
