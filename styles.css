@@ -608,6 +608,116 @@ footer {
     width: 100%;
 }
 
+/* AI Patent Lab Section */
+.ai-lab-item {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+    display: flex;
+    margin-bottom: 40px;
+    transition: var(--transition);
+}
+
+.ai-lab-item:hover {
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+    transform: translateY(-5px);
+}
+
+.ai-lab-video {
+    flex: 1;
+    background-color: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 250px;
+    max-width: 50%;
+}
+
+.ai-lab-video video {
+    width: 100%;
+    height: auto;
+    max-height: 400px;
+    display: block;
+    object-fit: contain;
+}
+
+.ai-lab-info {
+    flex: 1;
+    padding: 40px;
+}
+
+.ai-lab-info h3 {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+    margin-bottom: 25px;
+    position: relative;
+    padding-bottom: 10px;
+}
+
+.ai-lab-info h3::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 40px;
+    height: 3px;
+    background-color: var(--accent-color);
+}
+
+.sop-list {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+.sop-list li {
+    display: flex;
+    gap: 15px;
+}
+
+.sop-icon {
+    width: 40px;
+    height: 40px;
+    background-color: #f1f7fe;
+    color: var(--accent-color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.sop-icon i {
+    width: 20px;
+    height: 20px;
+}
+
+.sop-text strong {
+    display: block;
+    color: var(--primary-color);
+    font-size: 1rem;
+    margin-bottom: 4px;
+}
+
+.sop-text p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .ai-lab-item {
+        flex-direction: column;
+    }
+
+    .ai-lab-info {
+        padding: 25px;
+    }
+}
+
 /* Mobile Responsive */
 @media (max-width: 768px) {
     .nav-links {
