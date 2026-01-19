@@ -609,6 +609,10 @@ footer {
 }
 
 /* AI Patent Lab Section */
+#ai-lab .container {
+    max-width: 1200px;
+}
+
 .ai-lab-item {
     background: white;
     border-radius: 16px;
@@ -626,19 +630,18 @@ footer {
 }
 
 .ai-lab-video {
-    flex: 1;
+    flex: 2;
     background-color: #000;
     display: flex;
     align-items: center;
     justify-content: center;
     min-height: 250px;
-    max-width: 50%;
 }
 
 .ai-lab-video video {
     width: 100%;
     height: auto;
-    max-height: 400px;
+    max-height: 500px;
     display: block;
     object-fit: contain;
 }
