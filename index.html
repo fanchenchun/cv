@@ -132,7 +132,7 @@
         <section id="ai-lab" class="section bg-light">
             <div class="container">
                 <h2 class="section-title">專利AI實驗室</h2>
-                <p class="section-desc">結合 AI 輔助法律分析，提升專利判決摘要效率。</p>
+                <p class="section-desc">結合 AI 輔助法律分析，提升專利判決摘要與專利查核效率。</p>
 
                 <div class="ai-lab-item">
                     <div class="ai-lab-video">
@@ -166,6 +166,55 @@
                                 </div>
                             </li>
                         </ul>
+                    </div>
+                </div>
+
+                <!-- 專利AI分析 (Patent AI Analysis) 互動區 -->
+                <div class="ai-analysis-container">
+                    <div class="analysis-header">
+                        <div class="title-with-settings">
+                            <h3>專利AI分析 <span class="en-subtitle">Patent AI Analysis</span></h3>
+                            <button id="settings-btn" class="icon-btn" title="API 設定">
+                                <i data-lucide="settings"></i>
+                            </button>
+                        </div>
+                        <div id="api-key-modal" class="api-key-modal" style="display: none;">
+                            <div class="modal-content">
+                                <h4>Google Gemini API Key 設定</h4>
+                                <p class="modal-hint">Key 將儲存於您的瀏覽器 LocalStorage 中</p>
+                                <input type="password" id="api-key-input" placeholder="輸入您的 Google Gemini API Key">
+                                <div class="modal-actions">
+                                    <button id="save-api-key" class="btn primary sm">儲存</button>
+                                    <button id="close-modal" class="btn secondary sm">取消</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="analysis-controls">
+                        <div class="search-box">
+                            <input type="text" id="patent-input" placeholder="請輸入專利號 (例如: US11000000B2)">
+                            <button id="analyze-btn" class="btn primary">開始 AI 分析</button>
+                        </div>
+                        <!-- Loading & Status Area -->
+                        <div id="analysis-loader" class="analysis-loader" style="display: none;">
+                            <div class="status-meta">
+                                <span id="status-text" class="status-text">正在初始化分析系統...</span>
+                                <span id="status-percentage" class="status-percentage">0%</span>
+                            </div>
+                            <div class="progress-container">
+                                <div id="progress-bar" class="progress-bar"></div>
+                            </div>
+                        </div>
+                        <div class="example-tags">
+                            <span class="label">推薦範例：</span>
+                            <button class="tag" data-patent="US11000000B2">US11000000B2</button>
+                            <button class="tag" data-patent="US11716756B2">US11716756B2</button>
+                        </div>
+                    </div>
+
+                    <div id="analysis-results" class="analysis-results-area" style="display: none;">
+                        <!-- Results will be dynamically injected here -->
                     </div>
                 </div>
             </div>
