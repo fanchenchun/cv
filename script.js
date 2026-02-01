@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('nav a').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
             e.preventDefault();
+            navLinks.classList.remove('active');
             const targetId = this.getAttribute('href');
             const targetHeader = document.querySelector(targetId);
             if (targetHeader) {
@@ -18,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const navLinks = document.querySelector('.nav-links');
     if (menuBtn) {
         menuBtn.addEventListener('click', () => {
-            navLinks.style.display = navLinks.style.display === 'flex' ? 'none' : 'flex';
+            navLinks.classList.toggle('active');
         });
     }
 

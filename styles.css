@@ -69,6 +69,10 @@ nav {
     gap: 30px;
 }
 
+.nav-links.active {
+    display: flex;
+}
+
 .nav-links a {
     font-weight: 500;
     color: var(--text-secondary);
@@ -735,11 +739,32 @@ footer {
         top: 70px;
         left: 0;
         width: 100%;
-        background: white;
-        padding: 20px;
-        box-shadow: var(--shadow-md);
-        gap: 15px;
+        background-color: var(--bg-white);
+        padding: 20px 0;
+        box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        gap: 0;
+    }
+
+    .nav-links.active {
+        display: flex;
+    }
+
+    .nav-links li {
+        width: 100%;
         text-align: center;
+    }
+
+    .nav-links a {
+        display: block;
+        padding: 15px 0;
+        width: 100%;
+        color: var(--primary-color);
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .nav-links li:last-child a {
+        border-bottom: none;
     }
 
     .menu-btn {
