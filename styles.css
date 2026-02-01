@@ -728,6 +728,20 @@ footer {
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
+    .nav-links {
+        display: none;
+        flex-direction: column;
+        position: absolute;
+        top: 70px;
+        left: 0;
+        width: 100%;
+        background: white;
+        padding: 20px;
+        box-shadow: var(--shadow-md);
+        gap: 15px;
+        text-align: center;
+    }
+
     .menu-btn {
         display: block;
     }
