@@ -57,8 +57,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Patent AI Analysis Logic ---
-    const patentInput = document.getElementById('patent-input');
-    const analyzeBtn = document.getElementById('analyze-btn');
+    const uploadZone = document.getElementById('upload-zone');
+    const fileInput = document.getElementById('pdf-file-input');
     const resultsArea = document.getElementById('analysis-results');
     const loaderArea = document.getElementById('analysis-loader');
     const progressBar = document.getElementById('progress-bar');
@@ -182,6 +182,28 @@ document.addEventListener('DOMContentLoaded', () => {
         return ['gemini-1.5-flash-latest', 'gemini-1.5-flash', 'gemini-2.0-flash-exp'];
     }
 
+    if (typeof pdfjsLib !== 'undefined') {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+
+    // --- PDF Text Extraction Logic ---
+    async function extractTextFromPDF(file) {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let fullText = "";
+        const totalPages = pdf.numPages;
+
+        for (let i = 1; i <= totalPages; i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            const pageText = content.items.map(item => item.str).join(" ");
+            fullText += pageText + "\n";
+            const progress = Math.round((i / totalPages) * 100);
+            updateProgress(Math.round(progress * 0.3), `正在讀取 PDF 文字 (第 ${i}/${totalPages} 頁)...`);
+        }
+        return fullText;
+    }
+
     function normalizePatentNo(input) {
         return input.toUpperCase().replace(/[\s\/,]/g, '');
     }
@@ -193,48 +215,149 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function robustParseJSON(text) {
-        try {
-            // First pass: standard cleanup
-            let cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-            try {
-                return JSON.parse(cleanText);
-            } catch (e) {
-                // Second pass: find boundaries
-                const start = text.indexOf('{');
-                const end = text.lastIndexOf('}');
-                if (start !== -1 && end !== -1) {
-                    const jsonStr = text.substring(start, end + 1);
-                    return JSON.parse(jsonStr);
-                }
-                throw e;
+        let cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+
+        // --- 進階防禦性修復：處理引號、尾端逗號與閉合括號 ---
+        let inString = false;
+        let escaped = false;
+        let stack = [];
+
+        for (let i = 0; i < cleanText.length; i++) {
+            const char = cleanText[i];
+
+            if (char === '"' && !escaped) {
+                inString = !inString;
             }
+
+            if (inString) {
+                if (char === '\\') escaped = !escaped;
+                else escaped = false;
+                continue;
+            }
+
+            if (char === '{') stack.push('}');
+            else if (char === '[') stack.push(']');
+            else if (char === '}' || char === ']') {
+                if (stack.length > 0 && stack[stack.length - 1] === char) {
+                    stack.pop();
+                }
+            }
+        }
+
+        // 如果在字串內部截斷，先補上引號
+        if (inString) {
+            cleanText += '"';
+        }
+
+        // 移除末尾可能多餘的逗號 (針對極限截斷情形)
+        cleanText = cleanText.trim().replace(/,$/, '');
+
+        // 補齊缺失的括號
+        if (stack.length > 0) {
+            const closing = stack.reverse().join('');
+            console.warn("[JSON 修復] 偵測到截斷，正在補完結構:", closing);
+            cleanText += closing;
+        }
+
+        try {
+            return JSON.parse(cleanText);
         } catch (e) {
+            // 保底解決方案：提取最外層完整對象
+            const start = cleanText.indexOf('{');
+            const end = cleanText.lastIndexOf('}');
+            if (start !== -1 && end !== -1) {
+                try {
+                    return JSON.parse(cleanText.substring(start, end + 1));
+                } catch (e2) { }
+            }
             console.error("JSON 解析失敗，原始文本：", text);
-            throw new Error("AI 回傳格式不正確 (JSON 解析失敗)");
+            throw new Error("AI 回傳報告過長導致截斷，已嘗試修復但仍失敗，請減少字數需求或重試。");
         }
     }
 
-    let lastSuccessfulPatent = null;
-    let lastSuccessfulData = null;
 
-    const startAnalysis = async () => {
-        const rawNo = patentInput.value.trim();
-        if (!rawNo) {
-            alert('請輸入專利號');
+
+    const handleFileSelect = async (file) => {
+        if (!file || file.type !== 'application/pdf') {
+            alert('請上傳 PDF 格式的檔案');
             return;
         }
 
-        const patentNo = normalizePatentNo(rawNo);
-
-        // --- Cache Check: Avoid redundant API calls if patent is same ---
-        if (patentNo === lastSuccessfulPatent && lastSuccessfulData) {
-            displayAnalysis(lastSuccessfulData);
+        const apiKey = localStorage.getItem('gemini_api_key');
+        if (!apiKey) {
+            alert('請先設定 API Key 以啟用 AI 分析。');
+            apiKeyModal.style.display = 'block';
             return;
         }
 
-        // --- Demo Match ---
+        loaderArea.style.display = 'block';
+        resultsArea.style.display = 'none';
+        updateProgress(5, '正在啟動 PDF 解析引擎...');
+
+        try {
+            const pdfText = await extractTextFromPDF(file);
+            updateProgress(35, 'PDF 文字提取完成，正在呼叫 AI 深度分析...');
+
+            // --- 恢復動態探索邏輯，以確保模型名稱百分之百正確 (動態修復 404) ---
+            const availableModels = await getAvailableModels(apiKey);
+            const selectedModel = availableModels.find(m => m === 'gemini-1.5-flash-latest') ||
+                availableModels.find(m => m === 'gemini-1.5-flash') ||
+                availableModels.find(m => m.includes('1.5-flash')) ||
+                availableModels[0];
+
+            updateProgress(45, `AI 資深專利師 (${selectedModel}) 正在進行深度分析...`);
+
+            const result = await callGeminiPatentAPI(apiKey, pdfText, selectedModel);
+
+            if (!result || result.error) {
+                // --- 區域化 429 錯誤處理 ---
+                if (result?.error?.includes('429')) {
+                    statusText.innerHTML = '<span style="color: #e74c3c; font-weight: bold;">[流量繁忙] 請等待 30 秒後重新上傳或選取範例。</span>';
+                    statusPercentage.innerText = "Error";
+                    return;
+                }
+                throw new Error(result?.error || '分析過程發生未知錯誤');
+            }
+
+            updateProgress(90, '正在生成法律與技術分析報表...');
+            displayAnalysis(result);
+
+            updateProgress(100, '分析完成！');
+            setTimeout(() => {
+                loaderArea.style.display = 'none';
+            }, 1000);
+
+        } catch (error) {
+            console.error('Final Analysis Error:', error);
+            alert('分析失敗：' + error.message);
+            loaderArea.style.display = 'none';
+        }
+    };
+
+    if (uploadZone) {
+        uploadZone.addEventListener('click', () => fileInput.click());
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+        uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            handleFileSelect(file);
+        });
+    }
+
+    if (fileInput) {
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            handleFileSelect(file);
+        });
+    }
+
+    const startDemoAnalysis = async (patentNo) => {
         if (demoData[patentNo]) {
-            analyzeBtn.disabled = true;
             loaderArea.style.display = 'block';
             resultsArea.style.display = 'none';
             updateProgress(30, '正在從內部資料庫檢索範例數據...');
@@ -243,141 +366,70 @@ document.addEventListener('DOMContentLoaded', () => {
                 displayAnalysis(demoData[patentNo]);
                 setTimeout(() => {
                     loaderArea.style.display = 'none';
-                    analyzeBtn.disabled = false;
                 }, 800);
             }, 800);
-            return;
-        }
-
-        const apiKey = localStorage.getItem('gemini_api_key');
-        if (!apiKey) {
-            alert('這是外部專利號碼，請先設定 API Key 以啟用 AI 分析。');
-            apiKeyModal.style.display = 'block';
-            return;
-        }
-
-        analyzeBtn.disabled = true;
-        loaderArea.style.display = 'block';
-        resultsArea.style.display = 'none';
-        updateProgress(5, '正在探測可用 AI 模型...');
-
-        try {
-            // --- Smart Model Selection: Use discoverable models to avoid 404 ---
-            const availableModels = await getAvailableModels(apiKey);
-            if (!availableModels || availableModels.length === 0) {
-                throw new Error("您的 API Key 目前似乎沒有可用的 Gemini 模型清單。");
-            }
-
-            // 選取邏輯：強烈鎖定穩定的 1.5-flash 系列，避開尚不穩定的新版/實驗版模型
-            const selectedModel = availableModels.find(m => m === 'gemini-1.5-flash-latest') ||
-                availableModels.find(m => m === 'gemini-1.5-flash') ||
-                availableModels.find(m => m.includes('1.5-flash')) ||
-                availableModels[0];
-
-            console.log(`[智慧選核] 已為您的帳號自動選取高穩定模型：${selectedModel}`);
-            updateProgress(20, `正在使用 ${selectedModel} 進行檢索與分析...`);
-
-            const result = await callGeminiPatentAPI(apiKey, patentNo, selectedModel);
-
-            if (!result || result.error) {
-                throw new Error(result?.error || '分析過程發生未知錯誤');
-            }
-
-            if (result.notFound) {
-                alert('案號可能有誤或查無公開資料');
-                loaderArea.style.display = 'none';
-                analyzeBtn.disabled = false;
-                return;
-            }
-
-            updateProgress(80, '正在生成法律與技術分析報表...');
-            displayAnalysis(result);
-            lastSuccessfulPatent = patentNo;
-            lastSuccessfulData = result;
-
-            updateProgress(100, '分析完成！');
-            setTimeout(() => {
-                loaderArea.style.display = 'none';
-                analyzeBtn.disabled = false;
-            }, 1000);
-
-        } catch (error) {
-            console.error('Final Analysis Error:', error);
-            let errMsg = error.message;
-            if (errMsg.includes('quota') || errMsg.includes('429')) {
-                const retryMatch = errMsg.match(/retry in ([\d\.]+)s/);
-                let seconds = retryMatch ? Math.ceil(parseFloat(retryMatch[1])) : 60;
-
-                // --- Quota Cooldown UI ---
-                analyzeBtn.disabled = true;
-                const originalText = "開始 AI 分析";
-                const timer = setInterval(() => {
-                    seconds--;
-                    analyzeBtn.innerText = `冷卻中 (${seconds}s)...`;
-                    if (seconds <= 0) {
-                        clearInterval(timer);
-                        analyzeBtn.innerText = originalText;
-                        analyzeBtn.disabled = false;
-                    }
-                }, 1000);
-
-                errMsg = `API 流量暫時用盡。請等待按鈕倒數結束後再試，以確保配額重置。`;
-            }
-            alert('分析失敗：' + errMsg);
-            loaderArea.style.display = 'none';
-            if (!errMsg.includes('冷卻')) analyzeBtn.disabled = false;
         }
     };
 
-    if (analyzeBtn) {
-        analyzeBtn.addEventListener('click', startAnalysis);
-    }
+
 
     document.querySelectorAll('.tag').forEach(tag => {
         tag.addEventListener('click', (e) => {
             e.preventDefault();
-            patentInput.value = tag.getAttribute('data-patent');
-            startAnalysis();
+            startDemoAnalysis(tag.getAttribute('data-patent'));
         });
     });
 
-    async function callGeminiPatentAPI(apiKey, patentNo, modelId) {
+    async function callGeminiPatentAPI(apiKey, pdfText, modelId) {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
 
-        const systemInstruction = `你是專業的專利分析助理，擅長擷取搜尋結果並產出結構化報告。
-你的主要任務：針對專利號 ${patentNo} 進行搜尋，並將結果轉換為 JSON 格式。`;
+        const systemInstruction = `你是一位資深專利師。請閱讀使用者提供的專利說明書 PDF 文字內容，並精確輸出 JSON 格式資料。
+
+重點要求：
+1. 摘要內容：提供「完整」的英文摘要原文 (summary_original) 與深入淺出的中文白話說明 (summary_layman)。
+2. 權利期限與母案識別 (嚴格法律實務)：
+   - 識別申請日 (filing_date)。
+   - **核心計壽準則**：識別首頁 (63) Related U.S. Application Data 欄位。
+   - **排除臨時案**：如果最早的日期關聯的是「Provisional Application」(臨時申請案)，則「不可」將其作為 20 年權利期限的起算點。
+   - **正確起算點**：找出最早的「Non-provisional」(正式申請案 / Continuation / Division) 的母案申請日，將其填入 parent_filing_date 欄位。
+   - **到期日算法**：預估到期日 (expiry_date) = 最早「正式型」母案申請日 + 20年 + PTA天數。
+3. SEP 標準技術檢測 (限正文，排除引證區)：
+   - 僅搜尋說明書正文 (Specification) 提及的標準編號（如 802.11ax, TS 38.331 等）。
+4. Claim 1 結構化拆解：拆解為 Preamble 與 Body，左欄英文原文，右欄中文翻譯。
+
+請嚴格遵守以下 JSON 結構：
+{
+  "patent_no": "案號",
+  "patent_name": "...",
+  "assignee": "...",
+  "filing_date": "YYYY-MM-DD",
+  "parent_filing_date": "最早正式母案申請日 (排除臨時案)",
+  "pta_days": "123",
+  "expiry_date": "YYYY-MM-DD",
+  "summary_original": "Complete English abstract...",
+  "summary_layman": "...",
+  "claim_1": "Full Claim 1 text",
+  "claim_elements": [
+    {"element": "Preamble in English", "analysis": "中文翻譯"},
+    {"element": "Part in English", "analysis": "中文翻譯"}
+  ],
+  "sep_check": "涉及 SEP / 不涉及 SEP",
+  "sep_details": "具體標準編號與正文技術描述..."
+}`;
 
         const requestBody = {
             contents: [{
                 role: "user",
                 parts: [{
-                    text: `請分析華為專利 ${patentNo}。
-1. 使用工具搜尋該專利的正式名稱、專利權人、摘要與 Claim 1。
-2. 搜尋後，請先簡短總結該技術在 Wi-Fi 6 (Spatial Reuse) 中的關鍵地位。
-3. 最後務必嚴格輸出以下 JSON 格式報表。
-
-\`\`\`json
-{
-  "patent_no": "${patentNo}",
-  "patent_name": "正確標題",
-  "assignee": "Huawei Technologies Co., Ltd.",
-  "summary_original": "英文摘要",
-  "summary_layman": "中文分析",
-  "expiry_date": "YYYY-MM-DD",
-  "claim_1": "Claim 1 文本",
-  "claim_elements": [{"element": "...", "analysis": "..."}],
-  "sep_check": "高風險 SEP (Wi-Fi 6)",
-  "sep_details": "技術細節說明...",
-  "notFound": false
-}
-\`\`\`` }]
+                    text: `以下是專利說明書 PDF 的提取文字內容：\n\n${pdfText.substring(0, 45000)}`
+                }]
             }],
-            tools: [{ google_search: {} }],
             system_instruction: { parts: [{ text: systemInstruction }] },
             generationConfig: {
-                temperature: 0.4,
-                topP: 0.9,
-                maxOutputTokens: 3500
+                temperature: 0.1,
+                topP: 0.95,
+                maxOutputTokens: 4096, // 提升至 Flash 模型極限以應對大段原文
+                response_mime_type: "application/json"
             }
         };
 
@@ -443,6 +495,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function calculateCountdown(expiryDateStr) {
+        // This function is no longer directly used for display, but kept for potential future use or debugging.
         if (!expiryDateStr) return { years: 0, months: 0, days: 0 };
         const datePart = expiryDateStr.split(' ')[0];
         const now = new Date();
@@ -466,22 +519,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function displayAnalysis(data) {
-        const countdown = calculateCountdown(data.expiry_date);
         resultsArea.innerHTML = `
             <div class="a-card result-card-full">
                 <h4><i data-lucide="info"></i> 專利概覽：${data.patent_no}</h4>
                 <div style="margin-bottom: 15px; padding: 10px; background: rgba(var(--primary-rgb, 67, 97, 238), 0.05); border-left: 4px solid var(--primary-color); border-radius: 4px;">
                     <strong style="color: var(--primary-color);">專利名稱：</strong> ${data.patent_name || '未提供'}
-                </div>
-                <div class="summary-contrast">
-                    <div class="summary-box">
-                        <span class="type"><i data-lucide="file-text"></i> 摘要原文</span>
-                        <p>${data.summary_original || '無資料'}</p>
-                    </div>
-                    <div class="summary-box">
-                        <span class="type"><i data-lucide="sparkles"></i> AI 白話翻譯</span>
-                        <p>${data.summary_layman || '無資料'}</p>
-                    </div>
                 </div>
                 <div style="margin-top: 15px; font-size: 0.9rem; color: var(--text-secondary);">
                     <strong>申請人：</strong> ${data.assignee || '未知'}
@@ -490,30 +532,35 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="a-card">
                 <h4><i data-lucide="calendar"></i> 權利期限</h4>
                 <div class="expiry-content">
-                    <div class="expiry-date-val">預計到期日：${data.expiry_date || '未提供'}</div>
-                    <div class="countdown-grid">
-                        <div class="countdown-unit">
-                            <span class="countdown-val">${countdown.years}</span>
-                            <span class="countdown-label">年</span>
-                        </div>
-                        <div class="countdown-unit">
-                            <span class="countdown-val">${countdown.months}</span>
-                            <span class="countdown-label">月</span>
-                        </div>
-                        <div class="countdown-unit">
-                            <span class="countdown-val">${countdown.days}</span>
-                            <span class="countdown-label">日</span>
-                        </div>
+                    <div class="expiry-date-val" style="line-height: 1.8;">
+                        母案申請日：${data.parent_filing_date || data.filing_date || '未提供'}
+                        <br>
+                        本案申請日：${data.filing_date || '未提供'}
+                        <br>
+                        預計到期日：<span id="res-expiry" style="color: var(--primary-color); font-weight: bold;">未提供</span>
                     </div>
                 </div>
             </div>
-            <div class="a-card">
+            <div class="a-card result-card-full">
+                <h4><i data-lucide="file-text"></i> 摘要分析</h4>
+                <div class="summary-contrast">
+                    <div class="summary-box">
+                        <span class="type"><i data-lucide="file-text"></i> 摘要原文</span>
+                        <p id="res-summary-original">無資料</p>
+                    </div>
+                    <div class="summary-box">
+                        <span class="type"><i data-lucide="sparkles"></i> AI 白話翻譯</span>
+                        <p id="res-summary-layman">無資料</p>
+                    </div>
+                </div>
+            </div>
+            <div class="a-card result-card-full">
                 <h4><i data-lucide="shield-check"></i> SEP 標準技術檢測</h4>
-                <div class="sep-alert">
-                    <i data-lucide="alert-triangle"></i>
+                <div id="res-sep-alert" class="sep-alert" style="display: flex; gap: 15px; background: #fffcf0; border: 1px solid #ffecb3; padding: 15px; border-radius: 8px;">
+                    <i id="res-sep-icon" data-lucide="alert-circle" style="color: #f59e0b; flex-shrink: 0;"></i>
                     <div class="sep-content">
-                        <h5>${data.sep_check || '監測中'}</h5>
-                        <p>${data.sep_details || '正在對比標準文獻...'}</p>
+                        <h5 id="res-sep-check" style="margin: 0 0 8px 0; color: #92400e;">檢測中</h5>
+                        <div id="res-sep-details" style="font-size: 0.9rem; color: #b45309; line-height: 1.6;">正在對比標準文獻...</div>
                     </div>
                 </div>
             </div>
@@ -527,22 +574,86 @@ document.addEventListener('DOMContentLoaded', () => {
                     <table class="ebe-table">
                         <thead>
                             <tr>
-                                <th>權利項元件 (Element)</th>
-                                <th>技術特徵分析 (白話轉譯)</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">權利項元件 (原文)</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">技術特徵分析 (白話翻譯)</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            ${(data.claim_elements || []).map(item => `
-                                <tr>
-                                    <td><strong>${item.element}</strong></td>
-                                    <td>${item.analysis}</td>
-                                </tr>
-                            `).join('')}
+                        <tbody id="res-claim-elements">
+                            <!-- Claim elements will be inserted here by JS -->
                         </tbody>
                     </table>
                 </div>
             </div>
         `;
+
+        // --- 權利期限與 PTA 處理 ---
+        const filingDate = data.filing_date || "未知";
+        const ptaDays = parseInt(data.pta_days) || 0;
+        let expiryDateStr = data.expiry_date || "未知";
+        let remainingText = "";
+
+        if (expiryDateStr !== "未知") {
+            const expiry = new Date(expiryDateStr);
+            const now = new Date();
+            const diffTime = expiry - now;
+            const diffDaysTotal = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDaysTotal > 0) {
+                const years = Math.floor(diffDaysTotal / 365);
+                const months = Math.floor(((diffDaysTotal % 365) / 30)); // Simplified month calculation
+                const days = diffDaysTotal % 30;
+                remainingText = ` (剩餘時間：${years}年${months}月${days}日)`;
+            } else {
+                remainingText = " (已屆期)";
+            }
+        }
+
+        document.getElementById('res-expiry').innerText = `${expiryDateStr}${remainingText} (含 PTA: ${ptaDays}天)`;
+
+        // --- 摘要與翻譯 ---
+        document.getElementById('res-summary-original').innerText = data.summary_original || "無內容";
+        document.getElementById('res-summary-layman').innerText = data.summary_layman || "無內容";
+
+        // --- SEP 標準技術檢測處理 ---
+        const sepCheckStr = data.sep_check || "未確認";
+        const sepDetailsStr = data.sep_details || "正在解析說明書正文...";
+        const sepCheckEl = document.getElementById('res-sep-check');
+        const sepDetailsEl = document.getElementById('res-sep-details');
+        const sepAlertEl = document.getElementById('res-sep-alert');
+        const sepIconEl = document.getElementById('res-sep-icon');
+
+        if (sepCheckEl) sepCheckEl.innerText = sepCheckStr;
+        if (sepDetailsEl) sepDetailsEl.innerHTML = sepDetailsStr.replace(/\n/g, '<br>');
+
+        if (sepCheckStr.includes('涉及 SEP')) {
+            sepAlertEl.style.background = '#f0fff4';
+            sepAlertEl.style.borderColor = '#c6f6d5';
+            sepCheckEl.style.color = '#22543d';
+            sepDetailsEl.style.color = '#2f855a';
+            sepIconEl.setAttribute('data-lucide', 'check-circle');
+            sepIconEl.style.color = '#38a169';
+        } else if (sepCheckStr.includes('不涉及')) {
+            sepAlertEl.style.background = '#f7fafc';
+            sepAlertEl.style.borderColor = '#e2e8f0';
+            sepCheckEl.style.color = '#2d3748';
+            sepDetailsEl.style.color = '#4a5568';
+            sepIconEl.setAttribute('data-lucide', 'info');
+            sepIconEl.style.color = '#718096';
+        }
+
+        // --- Claim 1 拆解 (原文 vs 翻譯) ---
+        const claimElementsBody = document.getElementById('res-claim-elements');
+        claimElementsBody.innerHTML = '';
+        if (data.claim_elements && Array.isArray(data.claim_elements)) {
+            data.claim_elements.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-4 py-3 text-sm text-gray-700 border-b font-mono" style="background: #f8f9fa;">${item.element || '無原文'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700 border-b">${item.analysis || '無翻譯'}</td>
+                `;
+                claimElementsBody.appendChild(tr);
+            });
+        }
         resultsArea.style.display = 'grid';
         lucide.createIcons();
         resultsArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });

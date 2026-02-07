@@ -24,6 +24,8 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/glightbox/dist/css/glightbox.min.css" />
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- PDF.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 
 <body>
@@ -192,10 +194,17 @@
                     </div>
 
                     <div class="analysis-controls">
-                        <div class="search-box">
-                            <input type="text" id="patent-input" placeholder="請輸入專利號 (例如: US11000000B2)">
-                            <button id="analyze-btn" class="btn primary">開始 AI 分析</button>
+                        <div id="upload-zone" class="upload-zone">
+                            <div class="upload-icon">
+                                <i data-lucide="file-up"></i>
+                            </div>
+                            <div class="upload-text">
+                                <p><strong>點擊或拖放專利說明書 PDF 檔案</strong></p>
+                                <p class="text-hint">AI 將自動提取內容並進行多維度分析</p>
+                            </div>
+                            <input type="file" id="pdf-file-input" accept="application/pdf" style="display: none;">
                         </div>
+
                         <!-- Loading & Status Area -->
                         <div id="analysis-loader" class="analysis-loader" style="display: none;">
                             <div class="status-meta">
