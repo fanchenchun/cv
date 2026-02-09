@@ -32,25 +32,120 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const calculateBtn = document.getElementById('calculate-btn');
-    if (calculateBtn) {
-        calculateBtn.addEventListener('click', () => {
-            const annualExpense = parseFloat(document.getElementById('annual-expense').value) || 0;
-            const currentAssets = parseFloat(document.getElementById('current-assets').value) || 0;
-            const returnRate = (parseFloat(document.getElementById('return-rate').value) || 0) / 100;
-            const inflationRate = (parseFloat(document.getElementById('inflation-rate').value) || 0) / 100;
-            const realReturn = returnRate - inflationRate;
-            const fireTarget = annualExpense / (realReturn || 0.04);
-            const fireProgress = fireTarget > 0 ? (currentAssets / fireTarget) * 100 : 0;
-            const resultArea = document.getElementById('calculator-results');
+    // --- Financial Freedom Calculator Logic ---
+    const fireForm = document.getElementById('fire-form');
+    const assetAInput = document.getElementById('asset-a');
+    const rateBInput = document.getElementById('rate-b');
+    const assetCInput = document.getElementById('asset-c');
+    const rateDInput = document.getElementById('rate-d');
+    const expenseEInput = document.getElementById('expense-e');
+    const inflationFInput = document.getElementById('inflation-f');
+
+    const valCPrime = document.getElementById('val-c-prime');
+    const valGrowthIncome = document.getElementById('val-growth-income');
+    const valI2 = document.getElementById('val-i2');
+    const resultArea = document.getElementById('result-area');
+
+    function formatNumber(num) {
+        return Math.round(num).toLocaleString();
+    }
+
+    function parseInputNumber(value) {
+        return parseFloat(value.replace(/,/g, '')) || 0;
+    }
+
+    function formatInput(input) {
+        let value = input.value.replace(/,/g, '');
+        if (value && !isNaN(value)) {
+            input.value = Number(value).toLocaleString();
+        }
+    }
+
+    [assetAInput, assetCInput, expenseEInput].forEach(input => {
+        if (input) {
+            input.addEventListener('input', (e) => {
+                const cursorSelection = e.target.selectionStart;
+                const prevLength = e.target.value.length;
+                formatInput(e.target);
+                const newLength = e.target.value.length;
+                e.target.setSelectionRange(cursorSelection + (newLength - prevLength), cursorSelection + (newLength - prevLength));
+                updateMetrics();
+            });
+        }
+    });
+
+    [rateBInput, rateDInput, inflationFInput].forEach(input => {
+        if (input) {
+            input.addEventListener('input', updateMetrics);
+        }
+    });
+
+    function updateMetrics() {
+        const assetA = parseInputNumber(assetAInput.value);
+        const rateB = parseFloat(rateBInput.value) || 0;
+        const assetC = parseInputNumber(assetCInput.value);
+        const rateD = parseFloat(rateDInput.value) || 0;
+        const inflationF = parseFloat(inflationFInput.value) || 0;
+
+        const realRateB = (rateB - inflationF) / 100;
+        const realRateD = (rateD - inflationF) / 100;
+
+        const cPrime = assetA * realRateB;
+        const growthIncome = assetC * realRateD;
+        const i2 = cPrime + growthIncome;
+
+        if (valCPrime) valCPrime.innerText = `${formatNumber(cPrime)} 萬元`;
+        if (valGrowthIncome) valGrowthIncome.innerText = `${formatNumber(growthIncome)} 萬元`;
+        if (valI2) valI2.innerText = `${formatNumber(i2)} 萬元`;
+
+        return { i2, assetA, rateB, assetC, rateD, inflationF };
+    }
+
+    if (fireForm) {
+        fireForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const { i2, assetA, rateB, assetC, rateD, inflationF } = updateMetrics();
+            const expenseE = parseInputNumber(expenseEInput.value);
+
+            if (expenseE <= 0) {
+                alert('請輸入預計年支出');
+                return;
+            }
+
+            const fireProgress = (i2 / expenseE) * 100;
+            const isSuccess = fireProgress >= 100;
+
+            // 計算需補足金額 (方案1 & 方案2)
+            const deficit = Math.max(0, expenseE - i2);
+            const realRateB = (rateB - inflationF) / 100;
+            const realRateD = (rateD - inflationF) / 100;
+
+            const neededAssetA = realRateB > 0 ? deficit / realRateB : 0;
+            const neededAssetC = realRateD > 0 ? deficit / realRateD : 0;
+
             if (resultArea) {
+                resultArea.classList.remove('hidden');
                 resultArea.innerHTML = `
-                    <div class="result-card ${fireProgress >= 100 ? 'success' : 'warning'}">
-                        <h3>財務自由進度：${fireProgress.toFixed(1)}%</h3>
-                        <p>目標金額：${Math.round(fireTarget).toLocaleString()} 萬元</p>
-                        <p>${fireProgress >= 100 ? '恭喜！您已達成財務自由！' : '加油！持續累積資產，離目標更近一步。'}</p>
+                    <div class="result-card ${isSuccess ? 'success' : 'warning'}">
+                        <div class="result-header">
+                            <i data-lucide="${isSuccess ? 'party-popper' : 'trending-up'}"></i>
+                            <h3>財務自由進度：${fireProgress.toFixed(1)}%</h3>
+                        </div>
+                        <div class="stats-grid">
+                            <p>${isSuccess ? '恭喜您！您的被動收入已足以支付支出。' : '加油！您距離財務自由還有一步之遙。'}</p>
+                            ${!isSuccess ? `
+                                <div class="stat-item" style="margin-top: 15px; text-align: left;">
+                                    <p><strong>若要補足缺口，您可以選擇：</strong></p>
+                                    <ul style="list-style: none; padding: 0; margin-top: 10px;">
+                                        <li>💡 <strong>方案 1：</strong>增加配息型資產 <strong>${formatNumber(neededAssetA)} 萬元</strong></li>
+                                        <li>🚀 <strong>方案 2：</strong>增加成長型資產 <strong>${formatNumber(neededAssetC)} 萬元</strong></li>
+                                    </ul>
+                                </div>
+                            ` : ''}
+                        </div>
                     </div>
                 `;
+                lucide.createIcons();
                 resultArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
         });
