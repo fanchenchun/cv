@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>范振鈞 Jack Fan | QR Code</title>
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            gap: 0;
+        }
+
+        .identity {
+            font-size: 14px;
+            color: #444444;
+            letter-spacing: 0.5px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .qr-img {
+            width: 85vw;
+            max-width: 480px;
+            display: block;
+        }
+
+        .back-link {
+            margin-top: 40px;
+            font-size: 0.72rem;
+            color: #b0bec5;
+            text-decoration: none;
+            letter-spacing: 0.3px;
+        }
+
+        .back-link:hover {
+            color: #78909c;
+        }
+    </style>
+</head>
+<body>
+    <p class="identity">范振鈞 Jack Fan | 專利 AI 研究員</p>
+    <img class="qr-img" src="qr-code.png" alt="范振鈞 Jack Fan QR Code">
+    <a class="back-link" href="./index.html">返回主名片頁</a>
+</body>
+</html>
