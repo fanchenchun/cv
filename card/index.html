@@ -178,7 +178,6 @@
             color: var(--primary);
             border: 1.5px solid rgba(44, 62, 80, 0.18);
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
-            flex: 1;
         }
 
         .btn-secondary:hover {
@@ -187,11 +186,22 @@
             transform: translateY(-1px);
         }
 
+        .btn-line {
+            background: #06C755;
+            color: #ffffff;
+            box-shadow: 0 4px 14px rgba(6, 199, 85, 0.30);
+        }
+
+        .btn-line:hover {
+            box-shadow: 0 8px 24px rgba(6, 199, 85, 0.44);
+            opacity: 0.96;
+            transform: translateY(-1px);
+        }
+
         .btn-accent {
             background: linear-gradient(135deg, var(--accent) 0%, #2980b9 100%);
             color: #ffffff;
             box-shadow: 0 4px 14px rgba(52, 152, 219, 0.3);
-            flex: 1;
         }
 
         .btn-accent:hover {
@@ -236,11 +246,14 @@
             <a id="btn-vcf" class="btn btn-primary" href="jack_fan.vcf" download="jack_fan.vcf">
                 <span class="btn-emoji">💾</span>存入通訊錄
             </a>
+            <a id="btn-line" class="btn btn-line" href="https://line.me/ti/p/8HqDvmmHcE" target="_blank" rel="noopener">
+                <span class="btn-emoji">💬</span>加 LINE 好友
+            </a>
             <a id="btn-cv" class="btn btn-secondary" href="../">
                 <span class="btn-emoji">📄</span>查看詳細資歷
             </a>
             <a id="btn-lab" class="btn btn-accent" href="../#ai-lab">
-                <span class="btn-emoji">🧪</span>智財AI實驗室
+                <span class="btn-emoji">🧪</span>智財 AI 實驗室
             </a>
         </div>
 
