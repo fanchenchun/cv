@@ -192,6 +192,22 @@ nav {
     color: var(--text-secondary);
 }
 
+.experience-highlight {
+    display: inline-block;
+    background: linear-gradient(135deg, #f1f7fe 0%, #e8f4fd 100%);
+    border-left: 4px solid var(--accent-color);
+    border-radius: 8px;
+    padding: 14px 24px;
+    font-size: 1.2rem !important;
+    color: var(--primary-color) !important;
+    margin-bottom: 20px !important;
+}
+
+.experience-highlight strong {
+    color: var(--accent-color);
+    font-size: 1.25rem;
+}
+
 .key-skills {
     display: flex;
     flex-wrap: wrap;
