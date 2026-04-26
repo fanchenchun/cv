@@ -210,6 +210,55 @@
             transform: translateY(-1px);
         }
 
+        .btn-email {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 14px rgba(231, 76, 60, 0.30);
+        }
+
+        .btn-email:hover {
+            box-shadow: 0 8px 24px rgba(231, 76, 60, 0.44);
+            opacity: 0.96;
+            transform: translateY(-1px);
+        }
+
+        .btn-linkedin {
+            background: linear-gradient(135deg, #0077b5 0%, #005582 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 14px rgba(0, 119, 181, 0.30);
+        }
+
+        .btn-linkedin:hover {
+            box-shadow: 0 8px 24px rgba(0, 119, 181, 0.44);
+            opacity: 0.96;
+            transform: translateY(-1px);
+        }
+
+        /* Core Tags */
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .tag {
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: var(--accent);
+            background: rgba(52, 152, 219, 0.10);
+            border: 1px solid rgba(52, 152, 219, 0.28);
+            border-radius: 50px;
+            padding: 4px 12px;
+            letter-spacing: 0.4px;
+            transition: background 0.18s ease, color 0.18s ease;
+        }
+
+        .tag:hover {
+            background: rgba(52, 152, 219, 0.18);
+        }
+
         .btn-accent {
             background: linear-gradient(135deg, var(--accent) 0%, #2980b9 100%);
             color: #ffffff;
@@ -294,6 +343,13 @@
         <div class="title">專利顧問 | Patent Consultant</div>
         <div class="tagline">20 年智財實務 × AI 應用</div>
 
+        <!-- Core Advantage Tags -->
+        <div class="tags">
+            <span class="tag">#SEP談判</span>
+            <span class="tag">#專利AI化</span>
+            <span class="tag">#權利金管理</span>
+        </div>
+
         <!-- CTA Buttons -->
         <div class="actions">
             <a id="btn-vcf" class="btn btn-primary" href="jack_fan.vcf" download="jack_fan.vcf">
@@ -305,6 +361,14 @@
             <a id="btn-lab" class="btn btn-accent" href="../#ai-lab">
                 <span class="btn-emoji">🧪</span>智財 AI 實驗室
             </a>
+            <div class="btn-row">
+                <a id="btn-email" class="btn btn-email" href="mailto:fanchenchun@gmail.com">
+                    <span class="btn-emoji">✉️</span>寄信給我
+                </a>
+                <a id="btn-linkedin" class="btn btn-linkedin" href="https://www.linkedin.com/in/jack-fan-048b03228/" target="_blank" rel="noopener">
+                    <span class="btn-emoji">💼</span>LinkedIn
+                </a>
+            </div>
             <div class="btn-row">
                 <a id="btn-line" class="btn btn-line" href="https://line.me/ti/p/8HqDvmmHcE" target="_blank" rel="noopener">
                     <span class="btn-emoji">💬</span>加 LINE 好友
