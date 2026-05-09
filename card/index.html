@@ -325,6 +325,101 @@
             letter-spacing: 0.4px;
             font-weight: 300;
         }
+
+        /* ── Toast 訊息 ── */
+        .toast {
+            position: fixed;
+            bottom: 32px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: rgba(30, 40, 55, 0.93);
+            color: #fff;
+            padding: 13px 22px;
+            border-radius: 50px;
+            font-size: 0.88rem;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+            box-shadow: 0 8px 28px rgba(0,0,0,0.22);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 9999;
+            white-space: nowrap;
+            text-align: center;
+            max-width: 90vw;
+            white-space: pre-line;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ── LINE Overlay ── */
+        .line-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 20, 35, 0.72);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .line-overlay.visible {
+            display: flex;
+        }
+        .line-overlay-box {
+            background: #fff;
+            border-radius: 20px;
+            padding: 36px 28px 28px;
+            max-width: 340px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.25);
+            animation: fadeUp 0.35s cubic-bezier(0.22,1,0.36,1) both;
+        }
+        .line-overlay-icon {
+            font-size: 2.8rem;
+            margin-bottom: 14px;
+            line-height: 1;
+        }
+        .line-overlay-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #1a2533;
+            margin-bottom: 12px;
+            letter-spacing: 0.3px;
+        }
+        .line-overlay-body {
+            font-size: 0.9rem;
+            color: #4a5a6a;
+            line-height: 1.7;
+            margin-bottom: 24px;
+        }
+        .line-overlay-body strong {
+            color: #06C755;
+        }
+        .line-overlay-close {
+            display: inline-block;
+            padding: 12px 32px;
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: #fff;
+            border-radius: 50px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: opacity 0.18s ease, transform 0.18s ease;
+            letter-spacing: 0.3px;
+        }
+        .line-overlay-close:hover {
+            opacity: 0.88;
+            transform: translateY(-1px);
+        }
     </style>
 </head>
 <body>
@@ -352,9 +447,9 @@
 
         <!-- CTA Buttons -->
         <div class="actions">
-            <a id="btn-vcf" class="btn btn-primary" href="jack_fan.vcf" download="jack_fan.vcf">
+            <button id="btn-vcf" class="btn btn-primary" type="button" onclick="handleVcfDownload()">
                 <span class="btn-emoji">💾</span>存入通訊錄
-            </a>
+            </button>
             <a id="btn-cv" class="btn btn-secondary" href="../">
                 <span class="btn-emoji">📄</span>查看詳細資歷
             </a>
@@ -387,5 +482,131 @@
 
         <div class="card-footer">© 2026 Jack Fan | IP AI Lab</div>
     </div>
+
+    <!-- LINE 限制提示 Overlay -->
+    <div class="line-overlay" id="line-overlay" role="dialog" aria-modal="true" aria-label="LINE 瀏覽器提示">
+        <div class="line-overlay-box">
+            <div class="line-overlay-icon">💬</div>
+            <div class="line-overlay-title">請在外部瀏覽器開啟</div>
+            <div class="line-overlay-body">
+                因 LINE 限制下載功能，<br>
+                請點擊右上角 <strong>「⋯」</strong> 並選擇<br>
+                <strong>「在瀏覽器中開啟」</strong>，<br>即可正常存入通訊錄。
+            </div>
+            <button class="line-overlay-close" onclick="closeLineOverlay()">我知道了</button>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script>
+        /* ────────────────────────────────
+           環境偵測
+        ──────────────────────────────── */
+        function isLineBrowser() {
+            return /Line\/[\d.]+/i.test(navigator.userAgent);
+        }
+        function isAndroid() {
+            return /Android/i.test(navigator.userAgent);
+        }
+        function isIOS() {
+            return /iP(hone|ad|od)/i.test(navigator.userAgent);
+        }
+
+        /* ────────────────────────────────
+           Toast 工具
+        ──────────────────────────────── */
+        let toastTimer = null;
+        function showToast(msg, duration) {
+            duration = duration || 3000;
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(function () {
+                el.classList.remove('show');
+            }, duration);
+        }
+
+        /* ────────────────────────────────
+           LINE Overlay
+        ──────────────────────────────── */
+        function showLineOverlay() {
+            document.getElementById('line-overlay').classList.add('visible');
+        }
+        function closeLineOverlay() {
+            document.getElementById('line-overlay').classList.remove('visible');
+        }
+        // 點擊遮罩背景也可關閉
+        document.getElementById('line-overlay').addEventListener('click', function (e) {
+            if (e.target === this) closeLineOverlay();
+        });
+
+        /* ────────────────────────────────
+           vCard 內容
+        ──────────────────────────────── */
+        var VCARD_CONTENT = [
+            'BEGIN:VCARD',
+            'VERSION:3.0',
+            'FN:Jack Fan',
+            'N:Fan;Jack;;;',
+            'NICKNAME:老范',
+            'ORG:IP AI Lab',
+            'TITLE:專利顧問 | Patent Consultant',
+            'TEL;TYPE=CELL:',
+            'EMAIL;TYPE=WORK:fanchenchun@gmail.com',
+            'URL:https://fanchenchun.github.io/cv/',
+            'NOTE:20 年智財實務 × AI 應用 | SEP談判 | 專利AI化 | 權利金管理',
+            'END:VCARD'
+        ].join('\r\n');
+
+        /* ────────────────────────────────
+           主下載邏輯
+        ──────────────────────────────── */
+        function handleVcfDownload() {
+            // 1. LINE 瀏覽器：顯示引導 Overlay，不執行下載
+            if (isLineBrowser()) {
+                showLineOverlay();
+                return;
+            }
+
+            // 2. iOS（Safari）：直接用 data URI，iOS 會詢問加入通訊錄
+            if (isIOS()) {
+                showToast('正在生成通訊錄檔案...');
+                var dataUri = 'data:text/vcard;charset=utf-8,' + encodeURIComponent(VCARD_CONTENT);
+                window.location.href = dataUri;
+                return;
+            }
+
+            // 3. Android 及其他桌面瀏覽器：Blob + Object URL（相容性最強）
+            try {
+                var toastMsg = '正在生成通訊錄檔案...';
+                if (isAndroid()) {
+                    toastMsg = '正在生成通訊錄檔案...\n請於下載完成後點擊檔案開啟。';
+                }
+                showToast(toastMsg, 4500);
+
+                var blob = new Blob([VCARD_CONTENT], { type: 'text/vcard;charset=utf-8' });
+                var url = window.URL.createObjectURL(blob);
+                var link = document.createElement('a');
+                link.href = url;
+                link.download = 'JackFan.vcf';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                setTimeout(function () { window.URL.revokeObjectURL(url); }, 100);
+            } catch (err) {
+                // Fallback：若 Blob 不支援，改用靜態 vcf 檔案
+                showToast('正在下載...');
+                var fallback = document.createElement('a');
+                fallback.href = 'jack_fan.vcf';
+                fallback.download = 'JackFan.vcf';
+                document.body.appendChild(fallback);
+                fallback.click();
+                document.body.removeChild(fallback);
+            }
+        }
+    </script>
 </body>
 </html>
